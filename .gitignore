@@ -2,8 +2,7 @@
 CLAUDE.md
 docs/
 *.pdf
-# Third-party reference project (all rights reserved by its author): never publish
-phishing-analyzer/
+
 
 # Secrets and per-developer config
 .env
