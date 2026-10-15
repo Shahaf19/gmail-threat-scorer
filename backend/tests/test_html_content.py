@@ -1,4 +1,4 @@
-from app.html_content import MAX_LINKS, Link, read_content
+from app.html_content import Link, read_content
 
 
 def test_anchor_gives_destination_and_visible_text() -> None:
@@ -19,7 +19,9 @@ def test_comments_are_read_like_a_browser_does() -> None:
     assert [link.href for link in read_content("", html).links] == ["https://after-empty-comment.com"]
 
 
-def test_number_of_links_is_capped() -> None:
-    html = "".join(f'<a href="https://site{n}.com">x</a>' for n in range(MAX_LINKS * 2))
+def test_a_link_hidden_behind_many_others_or_a_long_prefix_is_still_seen() -> None:
+    padding = "".join(f'<a href="https://site{n}.com">x</a>' for n in range(500))
+    long_prefix = "https://" + "a" * 5_000 + "@evil.example/"
+    links = read_content("", padding + f'<a href="{long_prefix}">paypal.com</a>').links
 
-    assert len(read_content("", html).links) == MAX_LINKS
+    assert links[-1].href == long_prefix

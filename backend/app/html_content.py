@@ -8,9 +8,8 @@ import re
 from dataclasses import dataclass, replace
 from html.parser import HTMLParser
 
-MAX_LINKS = 200
-MAX_HREF_CHARS = 2_048  # the host sits at the front, so cutting a longer URL never hides it
-MAX_LINK_TEXT_CHARS = 500
+# Links are never capped or cut: an attacker could put the real link after the cap, or hide the real host
+# after a long "user@" prefix. The body itself is capped (200,000 characters), which bounds the work.
 MAX_TRACKING_PIXEL_SIZE = 2  # an image this small (in pixels, both ways) is not for reading
 # Browsers don't show these, so text inside them must not count as something the user reads.
 _NON_TEXT_TAGS = frozenset({"script", "style"})
@@ -52,7 +51,7 @@ def read_content(body_text: str, body_html: str) -> MessageContent:
     return replace(
         html,
         text=body_text or html.text,
-        links=tuple(unique_links)[:MAX_LINKS],
+        links=tuple(unique_links),
         visible_chars=word_chars(body_text) or html.visible_chars,
     )
 
@@ -118,8 +117,8 @@ class _HtmlReader(HTMLParser):
 
     def finish_anchor(self) -> None:
         if self._href and self._href.strip():
-            text = _collapse_whitespace("".join(self._anchor_text))[:MAX_LINK_TEXT_CHARS]
-            self.links.append(Link(self._href.strip()[:MAX_HREF_CHARS], text))
+            text = _collapse_whitespace("".join(self._anchor_text))
+            self.links.append(Link(self._href.strip(), text))
         self._href = None
         self._anchor_text = []
 
