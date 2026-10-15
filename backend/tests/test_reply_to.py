@@ -34,5 +34,13 @@ def test_reply_to_same_organization_is_clean(reply_to: str) -> None:
     assert finding_ids("From: news@company.com", reply_to) == []
 
 
+def test_sibling_subdomains_are_the_same_organization() -> None:
+    assert finding_ids("From: news@news.company.com", "Reply-To: help@help.company.com") == []
+
+
+def test_two_companies_under_a_shared_suffix_are_different() -> None:
+    assert finding_ids("From: info@bank.co.uk", "Reply-To: info@scammer.co.uk") == [REPLY_TO_MISMATCH]
+
+
 def test_no_reply_to_is_clean() -> None:
     assert finding_ids("From: news@company.com") == []

@@ -6,7 +6,7 @@ analyzers only report facts. A future learned model would replace exactly this t
 
 from collections.abc import Iterable, Mapping
 
-from app.analyzers import reply_to, sender_auth
+from app.analyzers import lookalike_domain, reply_to, sender_auth
 from app.schemas import MAX_SCORE, MIN_SCORE, Verdict
 
 SUSPICIOUS_FROM = 30
@@ -17,6 +17,9 @@ FINDING_POINTS: Mapping[str, int] = {
     sender_auth.DMARC_FAIL: 45,
     sender_auth.UNVERIFIED: 25,
     reply_to.REPLY_TO_MISMATCH: 20,
+    lookalike_domain.LOOKALIKE_DOMAIN: 50,
+    lookalike_domain.BRAND_IN_SUBDOMAIN: 35,
+    lookalike_domain.BRAND_WITH_EXTRA_WORDS: 25,
 }
 
 

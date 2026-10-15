@@ -2,7 +2,7 @@ import logging
 
 import pytest
 
-from app.analysis import RuleBasedAnalysisService
+from app.analysis import MAX_FINDING_TEXT_CHARS, RuleBasedAnalysisService
 from app.analyzers.base import Detection
 from app.parsed_email import ParsedEmail
 from app.schemas import MAX_SCORE, AnalyzeRequest, AnalyzeResponse, Verdict
@@ -85,6 +85,19 @@ def test_crash_log_does_not_contain_email_content(caplog: pytest.LogCaptureFixtu
 
     assert CrashingAnalyzer.name in caplog.text
     assert EMAIL_CONTENT_IN_ERROR not in caplog.text
+
+
+def test_finding_text_is_capped() -> None:
+    class WordyAnalyzer:
+        name = "Wordy check"
+
+        def analyze(self, email: ParsedEmail) -> list[Detection]:
+            return [Detection("spf_fail", "t" * 10_000, "d" * 10_000)]
+
+    result = analyze_with(WordyAnalyzer())
+
+    assert len(result.findings[0].title) <= MAX_FINDING_TEXT_CHARS
+    assert len(result.findings[0].detail) <= MAX_FINDING_TEXT_CHARS
 
 
 def test_unknown_finding_id_counts_as_analyzer_failure() -> None:
