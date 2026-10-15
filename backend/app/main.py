@@ -9,9 +9,12 @@ from fastapi.responses import JSONResponse
 from app import limits
 from app.analysis import AnalysisService, RuleBasedAnalysisService
 from app.analyzers.base import Analyzer
+from app.analyzers.lookalike_domain import LookalikeDomainAnalyzer
 from app.analyzers.reply_to import ReplyToMismatchAnalyzer
 from app.analyzers.sender_auth import SenderAuthenticationAnalyzer
 from app.body_size_limit import BodySizeLimitMiddleware
+from app.data.brands import BRANDS
+from app.data.top_sites import load_top_sites
 from app.schemas import AnalyzeRequest, AnalyzeResponse
 from app.scoring import FINDING_POINTS
 
@@ -20,6 +23,7 @@ INVALID_REQUEST_DETAIL = "Invalid request"
 ANALYZERS: list[Analyzer] = [
     SenderAuthenticationAnalyzer(),
     ReplyToMismatchAnalyzer(),
+    LookalikeDomainAnalyzer(load_top_sites(), BRANDS),
 ]
 
 _analysis_service = RuleBasedAnalysisService(ANALYZERS, FINDING_POINTS)

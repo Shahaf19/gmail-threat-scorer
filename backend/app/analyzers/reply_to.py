@@ -1,6 +1,7 @@
 """Flags emails whose replies would go to a different organization than the visible sender."""
 
 from app.analyzers.base import Detection
+from app.domains import same_organization
 from app.parsed_email import ParsedEmail, address_domains
 
 REPLY_TO_MISMATCH = "reply_to_mismatch"
@@ -17,7 +18,7 @@ class ReplyToMismatchAnalyzer:
         foreign = [
             domain
             for domain in address_domains(email.headers, "Reply-To")
-            if not _same_organization(domain, sender_domain)
+            if not same_organization(domain, sender_domain)
         ]
         if not foreign:
             return []
@@ -28,9 +29,3 @@ class ReplyToMismatchAnalyzer:
                 f"The email is from {sender_domain}, but replying would send your message to {foreign[0]}.",
             )
         ]
-
-
-def _same_organization(domain: str, other: str) -> bool:
-    # Approximation: a parent/subdomain pair (mail.x.com, x.com) counts as one organization;
-    # sibling subdomains (news.x.com, help.x.com) still count as different.
-    return domain == other or domain.endswith("." + other) or other.endswith("." + domain)

@@ -11,6 +11,17 @@ from app.scoring import total_score, verdict_for
 
 logger = logging.getLogger(__name__)
 
+# Finding text can quote attacker-controlled values (e.g. a 100,000-character domain); capping it keeps
+# the add-on card displayable, so an oversized value can't turn a verdict into "couldn't analyze".
+MAX_FINDING_TEXT_CHARS = 300
+ELLIPSIS = "..."
+
+
+def _shorten(text: str) -> str:
+    if len(text) <= MAX_FINDING_TEXT_CHARS:
+        return text
+    return text[: MAX_FINDING_TEXT_CHARS - len(ELLIPSIS)] + ELLIPSIS
+
 
 class AnalysisService(Protocol):
     def analyze(self, email: AnalyzeRequest) -> AnalyzeResponse: ...
@@ -53,7 +64,7 @@ class RuleBasedAnalysisService:
     def _to_finding(self, detection: Detection) -> Finding:
         return Finding(
             id=detection.finding_id,
-            title=detection.title,
-            detail=detection.detail,
+            title=_shorten(detection.title),
+            detail=_shorten(detection.detail),
             points=self._finding_points[detection.finding_id],
         )
