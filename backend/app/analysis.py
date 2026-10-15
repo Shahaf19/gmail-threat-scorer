@@ -7,7 +7,7 @@ from typing import Protocol
 from app.analyzers.base import Analyzer, Detection
 from app.parsed_email import ParsedEmail, parse_email
 from app.schemas import AnalyzeRequest, AnalyzeResponse, Finding
-from app.scoring import total_score, verdict_for
+from app.scoring import Combination, total_score, verdict_for
 
 logger = logging.getLogger(__name__)
 
@@ -28,12 +28,19 @@ class AnalysisService(Protocol):
 
 
 class RuleBasedAnalysisService:
-    def __init__(self, analyzers: Sequence[Analyzer], finding_points: Mapping[str, int]) -> None:
+    def __init__(
+        self,
+        analyzers: Sequence[Analyzer],
+        finding_points: Mapping[str, int],
+        combinations: Sequence[Combination] = (),
+    ) -> None:
         self._analyzers = analyzers
         self._finding_points = finding_points
+        self._combinations = combinations
 
     def analyze(self, email: AnalyzeRequest) -> AnalyzeResponse:
         findings, skipped_checks = self._run_analyzers(parse_email(email))
+        findings += self._combined(findings)
         ranked = sorted(findings, key=lambda finding: finding.points, reverse=True)
         score = total_score(finding.points for finding in ranked)
         return AnalyzeResponse(
@@ -60,6 +67,14 @@ class RuleBasedAnalysisService:
                 # Each kind of finding counts once, so repeated weak signals can't pile up.
                 findings_by_id.setdefault(finding.id, finding)
         return list(findings_by_id.values()), skipped_checks
+
+    def _combined(self, findings: list[Finding]) -> list[Finding]:
+        present = {finding.id for finding in findings}
+        return [
+            self._to_finding(combination.detection)
+            for combination in self._combinations
+            if combination.requires <= present and combination.any_of & present
+        ]
 
     def _to_finding(self, detection: Detection) -> Finding:
         return Finding(

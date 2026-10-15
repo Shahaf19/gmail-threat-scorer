@@ -5,10 +5,15 @@
  * @return {{score: number, verdict: string, findings: Object[]}}
  */
 function requestAnalysis(analysisRequest) {
-  const response = UrlFetchApp.fetch(BACKEND_URL + ANALYZE_PATH, {
+  return parseAnalysisResult(postJson(ANALYZE_PATH, analysisRequest));
+}
+
+/** Sends JSON to the backend with the user's identity token; returns the reply text or throws. */
+function postJson(path, payload) {
+  const response = UrlFetchApp.fetch(BACKEND_URL + path, {
     method: 'post',
     contentType: 'application/json',
-    payload: JSON.stringify(analysisRequest),
+    payload: JSON.stringify(payload),
     headers: { Authorization: 'Bearer ' + ScriptApp.getIdentityToken() },
     // Error statuses come back as values instead of exceptions, so we choose what gets logged.
     muteHttpExceptions: true,
@@ -18,7 +23,7 @@ function requestAnalysis(analysisRequest) {
   if (response.getResponseCode() !== HTTP_OK) {
     throw new Error('Backend returned HTTP ' + response.getResponseCode());
   }
-  return parseAnalysisResult(response.getContentText());
+  return response.getContentText();
 }
 
 /** Even our own backend's reply is checked before anything is drawn from it. */

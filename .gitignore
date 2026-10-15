@@ -3,6 +3,7 @@ CLAUDE.md
 docs/
 *.pdf
 
+
 # Secrets and per-developer config
 .env
 .env.*

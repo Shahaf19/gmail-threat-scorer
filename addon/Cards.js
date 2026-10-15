@@ -1,7 +1,8 @@
 const VERDICT_STYLES = {
+  // Deliberately not "Safe": finding no evidence is not proof that an email is harmless.
   safe: {
-    label: '✅ Safe',
-    advice: 'No action needed. Stay careful with unexpected requests for money or passwords.',
+    label: '✅ No warning signs found',
+    advice: 'Not a guarantee: stay careful with unexpected requests for money or passwords.',
   },
   suspicious: {
     label: '⚠️ Suspicious',
@@ -29,6 +30,7 @@ function buildResultCard(result) {
     .addSection(buildVerdictSection(result, style))
     .addSection(buildFindingsSection(result.findings))
     .addSection(adviceSection)
+    .addSection(buildFeedbackSection(result))
     .build();
 }
 
@@ -37,7 +39,7 @@ function buildVerdictSection(result, style) {
     CardService.newDecoratedText()
       .setTopLabel('Verdict')
       .setText('<b>' + style.label + '</b>')
-      .setBottomLabel('Risk score: ' + result.score + ' / ' + MAX_SCORE)
+      .setBottomLabel(scoreBar(result.score) + '  ' + result.score + ' / ' + MAX_SCORE)
   );
   if (result.skipped_checks.length > 0) {
     const skipped = result.skipped_checks.map(escapeHtml).join(', ');
@@ -54,7 +56,7 @@ function buildVerdictSection(result, style) {
 function buildFindingsSection(findings) {
   const section = CardService.newCardSection().setHeader('Why');
   if (findings.length === 0) {
-    return section.addWidget(CardService.newTextParagraph().setText('No warning signs found.'));
+    return section.addWidget(CardService.newTextParagraph().setText('None of the checks found anything.'));
   }
   findings.forEach((finding) => {
     section.addWidget(
@@ -68,6 +70,30 @@ function buildFindingsSection(findings) {
     section.setCollapsible(true).setNumUncollapsibleWidgets(VISIBLE_FINDINGS);
   }
   return section;
+}
+
+function scoreBar(score) {
+  const filled = Math.round((score / MAX_SCORE) * SCORE_BAR_SEGMENTS);
+  return '█'.repeat(filled) + '░'.repeat(SCORE_BAR_SEGMENTS - filled);
+}
+
+// Feedback carries only the verdict, score and finding ids (never email content): the backend logs it
+// as labeled examples. Action parameters must be strings.
+function buildFeedbackSection(result) {
+  const parameters = {
+    verdict: result.verdict,
+    score: String(result.score),
+    finding_ids: result.findings.map((finding) => finding.id).join(','),
+  };
+  const feedbackAction = (rating) =>
+    CardService.newAction().setFunctionName('onFeedback').setParameters(Object.assign({ rating: rating }, parameters));
+  return CardService.newCardSection()
+    .setHeader('Was this verdict right?')
+    .addWidget(
+      CardService.newButtonSet()
+        .addButton(CardService.newTextButton().setText('👍 Right').setOnClickAction(feedbackAction('right')))
+        .addButton(CardService.newTextButton().setText('👎 Wrong').setOnClickAction(feedbackAction('wrong')))
+    );
 }
 
 function buildErrorCard() {

@@ -154,6 +154,14 @@ def test_streamed_body_over_limit_is_rejected(client: TestClient) -> None:
     assert response.status_code == 413
 
 
+def test_feedback_is_accepted_and_malformed_feedback_is_not(client: TestClient) -> None:
+    good = {"verdict": "safe", "score": 5, "finding_ids": ["tracking_pixel"], "rating": "wrong"}
+
+    assert client.post("/feedback", json=good).json() == {"status": "recorded"}
+    assert client.post("/feedback", json={**good, "finding_ids": ["bad\nline"]}).status_code == 422
+    assert client.post("/feedback", json={**good, "rating": "maybe"}).status_code == 422
+
+
 @pytest.mark.parametrize("path", ["/docs", "/redoc", "/openapi.json"])
 def test_api_schema_is_not_published(client: TestClient, path: str) -> None:
     assert client.get(path).status_code == 404

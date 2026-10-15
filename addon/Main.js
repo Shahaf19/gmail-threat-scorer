@@ -7,6 +7,9 @@ function onGmailMessageOpen(e) {
   try {
     const message = getOpenMessage(e);
     const result = requestAnalysis(buildAnalysisRequest(message));
+    if (result.verdict === 'safe') {
+      rememberSender(message);
+    }
     return [buildResultCard(result)];
   } catch (error) {
     // Log only our own error text, never email content: logs are kept and read by people.

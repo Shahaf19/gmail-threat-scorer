@@ -4,13 +4,14 @@ import unicodedata
 
 # Characters that render like another letter (Cyrillic/Greek lookalikes, digits used as letters),
 # plus "i" -> "l" because the two are easily confused in many fonts. Applied to both sides of every
-# comparison, so the mapping only has to be consistent, not linguistically correct.
+# comparison, so the mapping only has to be consistent, not linguistically correct. translate() maps
+# each character once, so a lookalike of "i" must map straight to "l", not to "i".
 _LOOK_ALIKES = str.maketrans(
     {
         "а": "a", "е": "e", "о": "o", "р": "p", "с": "c", "х": "x",
-        "у": "y", "і": "i", "ј": "j", "ѕ": "s", "ԁ": "d", "һ": "h",
+        "у": "y", "і": "l", "ј": "j", "ѕ": "s", "ԁ": "d", "һ": "h",
         "ӏ": "l",
-        "ο": "o", "α": "a", "ν": "v", "ρ": "p", "τ": "t", "ι": "i",
+        "ο": "o", "α": "a", "ν": "v", "ρ": "p", "τ": "t", "ι": "l",
         "κ": "k",
         "0": "o", "1": "l", "3": "e", "5": "s",
         "i": "l",
@@ -19,7 +20,7 @@ _LOOK_ALIKES = str.maketrans(
 # Two letters that read as one: "rn" looks like "m", "vv" like "w".
 _PAIRS = (("rn", "m"), ("vv", "w"))
 
-
+#  reduces a name to a comparable form
 def skeleton(text: str) -> str:
     decomposed = unicodedata.normalize("NFKD", text.lower())
     without_accents = "".join(char for char in decomposed if not unicodedata.combining(char))

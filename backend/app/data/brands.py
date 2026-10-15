@@ -12,10 +12,12 @@ class Brand:
     name: str
     tokens: tuple[str, ...]
     domains: frozenset[str]
+    # Also a common person's name ("Chase Smith"), so a display name alone proves nothing.
+    is_common_name: bool = False
 
 
-def _brand(name: str, tokens: tuple[str, ...], *domains: str) -> Brand:
-    return Brand(name=name, tokens=tokens, domains=frozenset(domains))
+def _brand(name: str, tokens: tuple[str, ...], *domains: str, is_common_name: bool = False) -> Brand:
+    return Brand(name=name, tokens=tokens, domains=frozenset(domains), is_common_name=is_common_name)
 
 
 BRANDS: tuple[Brand, ...] = (
@@ -31,6 +33,7 @@ BRANDS: tuple[Brand, ...] = (
         "Google",
         ("google", "gmail"),
         "google.com", "gmail.com", "googlemail.com", "youtube.com", "googleusercontent.com", "gstatic.com",
+        "c.gle", "g.co", "goo.gl",
     ),
     _brand("Apple", ("apple", "icloud", "itunes"), "apple.com", "icloud.com", "me.com", "itunes.com"),
     _brand(
@@ -55,7 +58,7 @@ BRANDS: tuple[Brand, ...] = (
     _brand("UPS", ("ups",), "ups.com"),
     _brand("USPS", ("usps",), "usps.com"),
     _brand("Wells Fargo", ("wellsfargo",), "wellsfargo.com"),
-    _brand("Chase", ("chase",), "chase.com", "jpmorganchase.com"),
+    _brand("Chase", ("chase",), "chase.com", "jpmorganchase.com", is_common_name=True),
     _brand("Bank of America", ("bankofamerica",), "bankofamerica.com", "bofa.com"),
     _brand("Citi", ("citibank",), "citi.com", "citibank.com"),
     _brand("American Express", ("americanexpress", "amex"), "americanexpress.com", "aexp.com"),
@@ -77,5 +80,5 @@ BRANDS: tuple[Brand, ...] = (
     _brand("Intuit", ("intuit", "quickbooks"), "intuit.com", "quickbooks.com"),
     _brand("WeTransfer", ("wetransfer",), "wetransfer.com"),
     _brand("Revolut", ("revolut",), "revolut.com"),
-    _brand("Norton", ("norton",), "norton.com"),
+    _brand("Norton", ("norton",), "norton.com", is_common_name=True),
 )
