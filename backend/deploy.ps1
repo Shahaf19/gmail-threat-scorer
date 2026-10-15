@@ -11,10 +11,20 @@ $MaxInstances = 2
 $Memory = '512Mi'
 $PublicMembers = @('allUsers', 'allAuthenticatedUsers')
 $ExpectedAnonymousStatus = '403'
+# The abuse.ch key lives in Secret Manager; Cloud Run hands it to the app as an environment variable.
+$SecretName = 'abusech-auth-key'
+$SecretVariable = 'ABUSECH_AUTH_KEY'
+
+$secretArguments = @()
+if (gcloud secrets list --project $Project --filter="name:$SecretName" --format='value(name)') {
+    $secretArguments = @('--set-secrets', "$SecretVariable=${SecretName}:latest")
+} else {
+    Write-Warning "Secret '$SecretName' not found: known-threat lookups will be disabled."
+}
 
 gcloud run deploy $Service --source $PSScriptRoot --project $Project --region $Region `
     --no-allow-unauthenticated --max-instances $MaxInstances --memory $Memory `
-    --build-service-account $BuildServiceAccount --quiet
+    --build-service-account $BuildServiceAccount @secretArguments --quiet
 if ($LASTEXITCODE -ne 0) { throw 'Deploy failed.' }
 
 # Check 1: no IAM binding opens the service to everyone.

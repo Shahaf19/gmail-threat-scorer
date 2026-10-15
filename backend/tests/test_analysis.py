@@ -6,7 +6,7 @@ from app.analysis import MAX_FINDING_TEXT_CHARS, RuleBasedAnalysisService
 from app.analyzers.base import Detection
 from app.parsed_email import ParsedEmail
 from app.schemas import MAX_SCORE, AnalyzeRequest, AnalyzeResponse, Verdict
-from app.scoring import MALICIOUS_FROM, SUSPICIOUS_FROM, verdict_for
+from app.scoring import MALICIOUS_FROM, SUSPICIOUS_FROM, Combination, verdict_for
 
 POINTS = {
     "known_malware_hash": 100,
@@ -105,6 +105,23 @@ def test_unknown_finding_id_counts_as_analyzer_failure() -> None:
 
     assert result.skipped_checks == ["Buggy check"]
     assert result.findings == []
+
+
+def test_combination_adds_its_own_finding_only_when_its_parts_meet() -> None:
+    combo = Combination(
+        detection=Detection("pattern", "Pattern", ""),
+        requires=frozenset({"urgent_language"}),
+        any_of=frozenset({"spf_fail", "lookalike_domain"}),
+    )
+    email = AnalyzeRequest(headers="X: 1", subject="", body_text="", body_html="", truncated=False, attachments=[])
+
+    def ids(*finding_ids: str) -> set[str]:
+        service = RuleBasedAnalysisService([FixedAnalyzer(*finding_ids)], {**POINTS, "pattern": 30}, [combo])
+        return {finding.id for finding in service.analyze(email).findings}
+
+    assert "pattern" in ids("urgent_language", "lookalike_domain")
+    assert "pattern" not in ids("urgent_language")
+    assert "pattern" not in ids("lookalike_domain")
 
 
 @pytest.mark.parametrize(

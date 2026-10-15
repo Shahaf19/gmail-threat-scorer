@@ -1,11 +1,13 @@
 """Looks for links that hide where they really lead. Only the text of each link is inspected: nothing is fetched."""
 
 import re
+from collections.abc import Sequence
 
 from app.analyzers.base import Detection
-from app.domains import has_public_suffix, same_organization
+from app.data.brands import Brand
+from app.domains import has_public_suffix, same_organization, split_domain
 from app.html_content import Link
-from app.parsed_email import ParsedEmail
+from app.parsed_email import ParsedEmail, address_domains
 from app.urls import HTTP_SCHEMES, ParsedUrl, parse_url
 
 LINK_TEXT_MISMATCH = "link_text_mismatch"
@@ -23,18 +25,30 @@ _SHOWN_DOMAIN = re.compile(r"(?<![@\w.\-])(?:https?://)?((?:[a-z0-9\-]+\.)+[a-z]
 class LinkAnalyzer:
     name = "Link check"
 
+    def __init__(self, brands: Sequence[Brand]) -> None:
+        self._brands = brands
+
     def analyze(self, email: ParsedEmail) -> list[Detection]:
+        sender_domains = address_domains(email.headers, "From")
+        sender = sender_domains[0] if sender_domains else None
         detections: dict[str, Detection] = {}
         for link in email.links:
             url = parse_url(link.href)
             if url is None:
                 continue
-            for detection in _inspect(link, url):
+            leads_to_sender = bool(sender and url.host and self._same_owner(sender, url.host))
+            for detection in _inspect(link, url, leads_to_sender):
                 detections.setdefault(detection.finding_id, detection)
         return list(detections.values())
 
+    def _same_owner(self, sender: str, host: str) -> bool:
+        if same_organization(sender, host):
+            return True
+        sender_site, host_site = split_domain(sender).registrable, split_domain(host).registrable
+        return any(sender_site in brand.domains and host_site in brand.domains for brand in self._brands)
 
-def _inspect(link: Link, url: ParsedUrl) -> list[Detection]:
+
+def _inspect(link: Link, url: ParsedUrl, leads_to_sender: bool) -> list[Detection]:
     if url.scheme in DANGEROUS_SCHEMES:
         return [
             Detection(
@@ -63,7 +77,8 @@ def _inspect(link: Link, url: ParsedUrl) -> list[Detection]:
             )
         )
     shown = _shown_domain(link.text)
-    if shown and url.host and not same_organization(shown, url.host):
+    # Leaving the shown domain for the sender's own (a tracking redirect, a short link) isn't deceptive.
+    if shown and url.host and not leads_to_sender and not same_organization(shown, url.host):
         found.append(
             Detection(
                 LINK_TEXT_MISMATCH,

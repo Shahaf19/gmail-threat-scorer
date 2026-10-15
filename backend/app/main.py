@@ -1,5 +1,6 @@
 """HTTP entry point: routes, input guards and dependency wiring."""
 
+import logging
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, FastAPI, Request, status
@@ -8,30 +9,18 @@ from fastapi.responses import JSONResponse
 
 from app import limits
 from app.analysis import AnalysisService, RuleBasedAnalysisService
-from app.analyzers.base import Analyzer
-from app.analyzers.language import SensitiveInfoRequestAnalyzer, UrgentLanguageAnalyzer
-from app.analyzers.links import LinkAnalyzer
-from app.analyzers.lookalike_domain import LookalikeDomainAnalyzer
-from app.analyzers.reply_to import ReplyToMismatchAnalyzer
-from app.analyzers.sender_auth import SenderAuthenticationAnalyzer
+from app.analyzer_registry import build_analyzers
 from app.body_size_limit import BodySizeLimitMiddleware
-from app.data.brands import BRANDS
-from app.data.top_sites import load_top_sites
-from app.schemas import AnalyzeRequest, AnalyzeResponse
-from app.scoring import FINDING_POINTS
+from app.feedback import record_feedback
+from app.schemas import AnalyzeRequest, AnalyzeResponse, FeedbackRequest
+from app.scoring import COMBINATIONS, FINDING_POINTS
 
 INVALID_REQUEST_DETAIL = "Invalid request"
 
-ANALYZERS: list[Analyzer] = [
-    SenderAuthenticationAnalyzer(),
-    ReplyToMismatchAnalyzer(),
-    LookalikeDomainAnalyzer(load_top_sites(), BRANDS),
-    LinkAnalyzer(),
-    UrgentLanguageAnalyzer(),
-    SensitiveInfoRequestAnalyzer(),
-]
+# Without this, Python drops INFO messages and the feedback line would never reach Cloud Run's log.
+logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
 
-_analysis_service = RuleBasedAnalysisService(ANALYZERS, FINDING_POINTS)
+_analysis_service = RuleBasedAnalysisService(build_analyzers(), FINDING_POINTS, COMBINATIONS)
 
 router = APIRouter()
 
@@ -51,6 +40,12 @@ def analyze(
     service: Annotated[AnalysisService, Depends(get_analysis_service)],
 ) -> AnalyzeResponse:
     return service.analyze(email)
+
+
+@router.post("/feedback")
+def feedback(rating: FeedbackRequest) -> dict[str, str]:
+    record_feedback(rating)
+    return {"status": "recorded"}
 
 
 async def _reject_invalid_request(_: Request, __: RequestValidationError) -> JSONResponse:

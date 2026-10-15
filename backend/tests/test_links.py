@@ -5,11 +5,22 @@ from app.analyzers.links import (
     LINK_USERINFO,
     LinkAnalyzer,
 )
+from app.data.brands import Brand
 from tests.helpers import email_with
 
 
-def ids_for(body_html: str) -> list[str]:
-    return [d.finding_id for d in LinkAnalyzer().analyze(email_with(body_html=body_html))]
+GOOGLE = Brand("Google", ("google",), frozenset({"google.com", "c.gle"}))
+
+
+def ids_for(body_html: str, sender: str = "From: x@example.org") -> list[str]:
+    return [d.finding_id for d in LinkAnalyzer((GOOGLE,)).analyze(email_with(sender, body_html=body_html))]
+
+
+def test_link_into_the_senders_own_organization_is_not_a_mismatch() -> None:
+    html = '<a href="https://c.gle/abc">abuse.ch</a>'
+
+    assert ids_for(html, "From: Google <noreply@accounts.google.com>") == []
+    assert ids_for(html, "From: Evil <a@evil.ru>") == [LINK_TEXT_MISMATCH]
 
 
 def test_text_that_names_another_site_is_flagged() -> None:

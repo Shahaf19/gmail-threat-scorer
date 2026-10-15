@@ -20,6 +20,7 @@ function buildAnalysisRequest(message) {
       [headers, subject, bodyText, bodyHtml].some((field) => field.truncated) ||
       allAttachments.length > MAX_ATTACHMENTS,
     attachments: allAttachments.slice(0, MAX_ATTACHMENTS).map(describeAttachment),
+    sender_history: readSenderHistory(message),
   };
 }
 
@@ -37,11 +38,14 @@ function fitTo(text, maxChars) {
 }
 
 function describeAttachment(attachment) {
+  const bytes = attachment.getBytes();
   return {
     filename: keepEnd(attachment.getName(), MAX_FILENAME_CHARS),
     mime_type: fitTo(attachment.getContentType(), MAX_MIME_TYPE_CHARS).text,
     size_bytes: attachment.getSize(),
-    sha256: sha256Hex(attachment.getBytes()),
+    sha256: sha256Hex(bytes),
+    // The first bytes reveal what a file really is (e.g. "4d5a" = a Windows program), whatever its name says.
+    magic_hex: toHex(bytes.slice(0, MAGIC_BYTES)),
   };
 }
 
@@ -52,7 +56,10 @@ function keepEnd(text, maxChars) {
 }
 
 function sha256Hex(bytes) {
-  const digest = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, bytes);
-  // computeDigest returns signed bytes (-128..127); masking maps them to 0..255 before hex encoding.
-  return digest.map((byte) => (byte & 0xff).toString(16).padStart(2, '0')).join('');
+  return toHex(Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, bytes));
+}
+
+function toHex(bytes) {
+  // Apps Script bytes are signed (-128..127); masking maps them to 0..255 before hex encoding.
+  return bytes.map((byte) => (byte & 0xff).toString(16).padStart(2, '0')).join('');
 }
