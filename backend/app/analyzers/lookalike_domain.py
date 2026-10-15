@@ -11,6 +11,7 @@ from app.confusables import is_one_edit_away, skeleton
 from app.data.brands import Brand
 from app.domains import DomainParts, split_domain, to_unicode
 from app.parsed_email import ParsedEmail, address_domains
+from app.urls import HTTP_SCHEMES, parse_url
 
 LOOKALIKE_DOMAIN = "lookalike_domain"
 BRAND_IN_SUBDOMAIN = "brand_in_subdomain"
@@ -22,7 +23,8 @@ MAX_LABEL_LENGTH = 63  # DNS limit; longer is not a real name
 # Brand names shorter than this ("ups", "chase", "zoom") only match as a whole word.
 MIN_SUBSTRING_BRAND_LENGTH = 6
 # Bounds the work an attacker can force with a header stuffed with thousands of addresses.
-MAX_DOMAINS_CHECKED = 10
+# Link domains need no such cap here: the email's links are already capped when read.
+MAX_HEADER_DOMAINS = 10
 # Only the best-known sites are imitation targets. Measured on 20,000 ordinary sites ranked 10,001-30,000,
 # comparing against the top 10,000 wrongly flagged 3.9% of them; the top 1,000 plus curated brands, 0.7%,
 # with the same detection of typo/visual attacks on the most-impersonated brands.
@@ -136,8 +138,17 @@ class LookalikeDomainAnalyzer:
 
 
 def _domains_to_check(email: ParsedEmail) -> list[str]:
-    domains = [*address_domains(email.headers, "From"), *address_domains(email.headers, "Reply-To")]
-    return list(dict.fromkeys(domains))[:MAX_DOMAINS_CHECKED]
+    header_domains = [*address_domains(email.headers, "From"), *address_domains(email.headers, "Reply-To")]
+    return list(dict.fromkeys([*header_domains[:MAX_HEADER_DOMAINS], *_link_domains(email)]))
+
+
+def _link_domains(email: ParsedEmail) -> list[str]:
+    domains = []
+    for link in email.links:
+        url = parse_url(link.href)
+        if url and url.host and not url.is_numeric_address and url.scheme in {*HTTP_SCHEMES, ""}:
+            domains.append(url.host)
+    return domains
 
 
 def _token_skeletons(brand: Brand) -> set[str]:

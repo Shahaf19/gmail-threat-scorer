@@ -9,6 +9,8 @@ from fastapi.responses import JSONResponse
 from app import limits
 from app.analysis import AnalysisService, RuleBasedAnalysisService
 from app.analyzers.base import Analyzer
+from app.analyzers.language import SensitiveInfoRequestAnalyzer, UrgentLanguageAnalyzer
+from app.analyzers.links import LinkAnalyzer
 from app.analyzers.lookalike_domain import LookalikeDomainAnalyzer
 from app.analyzers.reply_to import ReplyToMismatchAnalyzer
 from app.analyzers.sender_auth import SenderAuthenticationAnalyzer
@@ -24,6 +26,9 @@ ANALYZERS: list[Analyzer] = [
     SenderAuthenticationAnalyzer(),
     ReplyToMismatchAnalyzer(),
     LookalikeDomainAnalyzer(load_top_sites(), BRANDS),
+    LinkAnalyzer(),
+    UrgentLanguageAnalyzer(),
+    SensitiveInfoRequestAnalyzer(),
 ]
 
 _analysis_service = RuleBasedAnalysisService(ANALYZERS, FINDING_POINTS)

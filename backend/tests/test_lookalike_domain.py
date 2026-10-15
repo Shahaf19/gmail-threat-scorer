@@ -4,7 +4,7 @@ from app.analyzers.lookalike_domain import (
     BRAND_IN_SUBDOMAIN,
     BRAND_WITH_EXTRA_WORDS,
     LOOKALIKE_DOMAIN,
-    MAX_DOMAINS_CHECKED,
+    MAX_HEADER_DOMAINS,
     MAX_TARGET_SITES,
     LookalikeDomainAnalyzer,
 )
@@ -102,7 +102,7 @@ def test_each_finding_is_reported_once() -> None:
 
 
 def test_a_header_stuffed_with_addresses_is_bounded() -> None:
-    stuffed = ", ".join(f"a@spam{number}.example.org" for number in range(MAX_DOMAINS_CHECKED * 50))
+    stuffed = ", ".join(f"a@spam{number}.example.org" for number in range(MAX_HEADER_DOMAINS * 50))
 
     assert finding_ids("example.org", reply_to=stuffed) == []
 

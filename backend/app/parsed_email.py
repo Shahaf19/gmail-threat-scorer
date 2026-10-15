@@ -5,6 +5,7 @@ from email import policy
 from email.message import EmailMessage
 from email.parser import HeaderParser
 
+from app.html_content import Link, read_content
 from app.schemas import AnalyzeRequest
 
 
@@ -12,12 +13,15 @@ from app.schemas import AnalyzeRequest
 class ParsedEmail:
     request: AnalyzeRequest
     headers: EmailMessage
+    text: str  # what the reader sees: the plain-text body, or the text of the HTML body
+    links: tuple[Link, ...]
 
 
 def parse_email(request: AnalyzeRequest) -> ParsedEmail:
     # policy.default decodes encoded names (=?utf-8?...?=) and parses address headers.
     headers = HeaderParser(policy=policy.default).parsestr(request.headers)
-    return ParsedEmail(request=request, headers=headers)
+    content = read_content(request.body_text, request.body_html)
+    return ParsedEmail(request=request, headers=headers, text=content.text, links=content.links)
 
 
 def address_domains(headers: EmailMessage, header_name: str) -> list[str]:

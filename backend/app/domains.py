@@ -27,6 +27,11 @@ def split_domain(domain: str) -> DomainParts:
     )
 
 
+def has_public_suffix(domain: str) -> bool:
+    """False for look-alike text such as "invoice.pdf", where ".pdf" is not a real domain ending."""
+    return bool(_extract(to_unicode(domain.lower())).suffix)
+
+
 def same_organization(domain: str, other: str) -> bool:
     return split_domain(domain).registrable == split_domain(other).registrable
 
