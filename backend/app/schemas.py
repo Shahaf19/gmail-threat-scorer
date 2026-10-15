@@ -54,3 +54,4 @@ class AnalyzeResponse(BaseModel):
     score: int = Field(ge=MIN_SCORE, le=MAX_SCORE)
     verdict: Verdict
     findings: list[Finding]
+    skipped_checks: list[str]

@@ -69,6 +69,7 @@ def test_route_returns_the_injected_service_result() -> None:
         score=90,
         verdict=Verdict.MALICIOUS,
         findings=[Finding(id="test", title="Test", detail="Injected", points=90)],
+        skipped_checks=[],
     )
 
     class FixedService:

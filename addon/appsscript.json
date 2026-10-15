@@ -1,0 +1,28 @@
+{
+  "timeZone": "Etc/UTC",
+  "runtimeVersion": "V8",
+  "exceptionLogging": "STACKDRIVER",
+  "oauthScopes": [
+    "https://www.googleapis.com/auth/gmail.addons.execute",
+    "https://www.googleapis.com/auth/gmail.addons.current.message.readonly",
+    "https://www.googleapis.com/auth/script.external_request",
+    "openid"
+  ],
+  "urlFetchWhitelist": [
+    "https://gmail-threat-scorer-581087277333.europe-west1.run.app/"
+  ],
+  "addOns": {
+    "common": {
+      "name": "Threat Scorer",
+      "logoUrl": "https://www.gstatic.com/images/icons/material/system/1x/security_black_48dp.png"
+    },
+    "gmail": {
+      "contextualTriggers": [
+        {
+          "unconditional": {},
+          "onTriggerFunction": "onGmailMessageOpen"
+        }
+      ]
+    }
+  }
+}

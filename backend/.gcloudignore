@@ -1,0 +1,8 @@
+# Upload only what the container build needs: no local virtualenv, tests or secrets.
+.gcloudignore
+.venv/
+tests/
+__pycache__/
+.pytest_cache/
+.env
+.env.*

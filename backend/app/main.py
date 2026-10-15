@@ -7,17 +7,28 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 from app import limits
-from app.analysis import AnalysisService, StubAnalysisService
+from app.analysis import AnalysisService, RuleBasedAnalysisService
+from app.analyzers.base import Analyzer
+from app.analyzers.reply_to import ReplyToMismatchAnalyzer
+from app.analyzers.sender_auth import SenderAuthenticationAnalyzer
 from app.body_size_limit import BodySizeLimitMiddleware
 from app.schemas import AnalyzeRequest, AnalyzeResponse
+from app.scoring import FINDING_POINTS
 
 INVALID_REQUEST_DETAIL = "Invalid request"
+
+ANALYZERS: list[Analyzer] = [
+    SenderAuthenticationAnalyzer(),
+    ReplyToMismatchAnalyzer(),
+]
+
+_analysis_service = RuleBasedAnalysisService(ANALYZERS, FINDING_POINTS)
 
 router = APIRouter()
 
 
 def get_analysis_service() -> AnalysisService:
-    return StubAnalysisService()
+    return _analysis_service
 
 
 @router.get("/health")
