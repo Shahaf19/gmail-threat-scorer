@@ -1,0 +1,23 @@
+# Private working files (not part of the submission)
+CLAUDE.md
+docs/
+*.pdf
+
+# Secrets and per-developer config
+.env
+.env.*
+.clasprc.json
+.clasp.json
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.coverage
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
