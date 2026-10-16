@@ -2,6 +2,8 @@
 CLAUDE.md
 docs/
 *.pdf
+# Interview demo kit (sends test emails to my own inbox): kept locally, not part of the submission
+demo/
 
 
 # Secrets and per-developer config

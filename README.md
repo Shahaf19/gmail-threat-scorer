@@ -1,10 +1,12 @@
 # Gmail Threat Scorer
 
-A Gmail add-on that scores the email you open from 0 to 100, gives a verdict, and explains every point of it.
+A Gmail add-on that checks the email you have open for signs of phishing and other malicious content.
+
+It runs 12 checks covering who really sent the email, where its links really lead, what its attachments really are, and whether it pressures you or asks for passwords or payment details. It adds up the evidence into a risk score from 0 to 100. The result appears in a panel beside the email: a verdict, the reasons behind it and advice on what to do.
 
 ## Highlights
 
-- **Explainable:** every point on the card traces back to a named finding.
+- **Shows its reasons, not just a number:** the result panel lists every reason that raised the score, with its points. For example, "+35 · Link text doesn't match its destination" means the link shows one website but actually opens another. You can see *why* an email was flagged, not only *that* it was.
 - **12 checks:** sender spoofing, lookalike domains, deceptive links, pressure language, requests for secrets, risky attachments, hidden content, domain age, known malware, and sender history.
 - **Private:** read-only access to the open email; attachments never leave Google; no email content is stored or logged.
 
@@ -15,7 +17,7 @@ A Gmail add-on that scores the email you open from 0 to 100, gives a verdict, an
 1. You open an email, and the add-on reads **that message only**.
 2. It sends the headers, the bodies and attachment fingerprints to the backend, with a Google identity token.
 3. Cloud Run verifies the token. The backend runs the checks and adds up the points.
-4. The card shows the verdict (**No warning signs** / **Suspicious** / **Malicious**), a score, and the reasons.
+4. The result panel beside the email shows the verdict, the score, and the reasons.
 
 ## Security
 
@@ -26,7 +28,7 @@ A Gmail add-on that scores the email you open from 0 to 100, gives a verdict, an
 
 ## Usage
 
-Open any email in Gmail and click the shield icon in the side panel. A typical card:
+Open any email in Gmail and click the shield icon in the right-hand side panel. The add-on shows its result there. A typical result for a phishing email:
 
 ```
 Verdict        ⛔ Malicious
